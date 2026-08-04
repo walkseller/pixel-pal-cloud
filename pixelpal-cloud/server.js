@@ -19,53 +19,88 @@ const io = new Server(server, {
   }
 });
 
-let users = {};
-let messages = [];
+let rooms = {}; // roomId -> { users: { socketId: userData }, messages: [] }
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  socket.on('join', (userData) => {
-    users[socket.id] = {
+  socket.on('join', (data) => {
+    const { username, room = 'lobby', sprite, x, y } = data;
+    
+    // Leave previous rooms
+    Array.from(socket.rooms).forEach(r => {
+      if (r !== socket.id) socket.leave(r);
+    });
+
+    socket.join(room);
+    socket.currentRoom = room;
+
+    if (!rooms[room]) {
+      rooms[room] = { users: {}, messages: [] };
+    }
+
+    rooms[room].users[socket.id] = {
       id: socket.id,
-      username: userData.username || 'Anonymous',
-      sprite: userData.sprite || Array(256).fill('transparent'),
-      x: userData.x || 120,
-      y: userData.y || 150
+      username: username || 'Anonymous',
+      sprite: sprite || Array(256).fill('transparent'),
+      x: x || 120,
+      y: y || 150,
+      chatMessage: '',
+      chatTimer: null
     };
-    io.emit('update_users', Object.values(users));
-    socket.emit('chat_history', messages);
+
+    io.to(room).emit('update_users', Object.values(rooms[room].users));
   });
 
   socket.on('update_sprite', (spriteData) => {
-    if (users[socket.id]) {
-      users[socket.id].sprite = spriteData;
-      io.emit('update_users', Object.values(users));
+    const room = socket.currentRoom;
+    if (room && rooms[room] && rooms[room].users[socket.id]) {
+      rooms[room].users[socket.id].sprite = spriteData;
+      io.to(room).emit('update_users', Object.values(rooms[room].users));
     }
   });
 
   socket.on('update_position', (pos) => {
-    if (users[socket.id]) {
-      users[socket.id].x = pos.x;
-      users[socket.id].y = pos.y;
-      io.emit('update_users', Object.values(users));
+    const room = socket.currentRoom;
+    if (room && rooms[room] && rooms[room].users[socket.id]) {
+      rooms[room].users[socket.id].x = pos.x;
+      rooms[room].users[socket.id].y = pos.y;
+      io.to(room).emit('update_users', Object.values(rooms[room].users));
     }
   });
 
-  socket.on('send_message', (msg) => {
-    const messageObj = {
-      sender: users[socket.id] ? users[socket.id].username : 'Unknown',
-      text: msg,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    messages.push(messageObj);
-    if (messages.length > 50) messages.shift();
-    io.emit('new_message', messageObj);
+  socket.on('send_message', (text) => {
+    const room = socket.currentRoom;
+    if (room && rooms[room] && rooms[room].users[socket.id]) {
+      const user = rooms[room].users[socket.id];
+      user.chatMessage = text;
+      
+      // Clear existing timer if any
+      if (user.chatTimer) clearTimeout(user.chatTimer);
+
+      io.to(room).emit('update_users', Object.values(rooms[room].users));
+
+      // Auto clear chat bubble after 6 seconds
+      user.chatTimer = setTimeout(() => {
+        if (rooms[room] && rooms[room].users[socket.id]) {
+          rooms[room].users[socket.id].chatMessage = '';
+          io.to(room).emit('update_users', Object.values(rooms[room].users));
+        }
+      }, 6000);
+    }
   });
 
   socket.on('disconnect', () => {
-    delete users[socket.id];
-    io.emit('update_users', Object.values(users));
+    const room = socket.currentRoom;
+    if (room && rooms[room] && rooms[room].users[socket.id]) {
+      if (rooms[room].users[socket.id].chatTimer) clearTimeout(rooms[room].users[socket.id].chatTimer);
+      delete rooms[room].users[socket.id];
+      if (Object.keys(rooms[room].users).length === 0) {
+        delete rooms[room];
+      } else {
+        io.to(room).emit('update_users', Object.values(rooms[room].users));
+      }
+    }
     console.log('User disconnected:', socket.id);
   });
 });

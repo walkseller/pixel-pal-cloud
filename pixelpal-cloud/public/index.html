@@ -44,13 +44,13 @@
 </head>
 <body class="bg-gruvbox-bg min-h-screen text-gruvbox-fg font-sans overflow-hidden select-none">
 
-  <!-- Connect / Name Entry Screen -->
+  <!-- Connect / Room Entry Screen -->
   <div id="connect-screen" class="flex items-center justify-center min-h-screen p-4">
     <div class="bg-gruvbox-card p-8 rounded-none shadow-[6px_6px_0px_0px_#504945] max-w-md w-full border-2 border-gruvbox-border text-left">
       <div class="flex items-center justify-between mb-6 pb-4 border-b-2 border-gruvbox-border">
         <div>
           <h1 class="text-4xl font-jersey tracking-wider text-gruvbox-green">pixel pal cloud</h1>
-          <p class="text-xs text-gruvbox-muted font-mono mt-1">no vpn or setup! just enter your name and hop in.</p>
+          <p class="text-xs text-gruvbox-muted font-mono mt-1">press <kbd class="px-1 bg-gruvbox-lighter border border-gruvbox-border text-gruvbox-yellow"> / </kbd> anytime in-game to chat!</p>
         </div>
         <div class="px-2.5 py-1 bg-gruvbox-green text-gruvbox-bg font-jersey text-xl font-bold shadow-[2px_2px_0px_0px_#504945]">cloud</div>
       </div>
@@ -59,6 +59,17 @@
         <div>
           <label class="block text-xs font-mono uppercase tracking-widest text-gruvbox-muted mb-1.5">your name</label>
           <input type="text" id="username-input" class="w-full px-4 py-2.5 bg-gruvbox-lighter border-2 border-gruvbox-border text-gruvbox-fg font-mono text-sm focus:outline-none focus:border-gruvbox-green shadow-[2px_2px_0px_0px_#504945]" placeholder="parker">
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono uppercase tracking-widest text-gruvbox-muted mb-1.5">room mode</label>
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <button id="mode-lobby-btn" class="py-2 bg-gruvbox-green text-gruvbox-bg font-jersey text-xl font-bold border-2 border-gruvbox-border shadow-[2px_2px_0px_0px_#504945]">public lobby</button>
+            <button id="mode-private-btn" class="py-2 bg-gruvbox-lighter text-gruvbox-muted hover:text-gruvbox-fg font-jersey text-xl font-bold border-2 border-gruvbox-border">private room</button>
+          </div>
+          <div id="room-code-wrapper" class="hidden">
+            <input type="text" id="room-code-input" class="w-full px-4 py-2.5 bg-gruvbox-lighter border-2 border-gruvbox-border text-gruvbox-fg uppercase font-mono text-sm focus:outline-none focus:border-gruvbox-green shadow-[2px_2px_0px_0px_#504945]" placeholder="ENTER SECRET ROOM CODE">
+          </div>
         </div>
 
         <div>
@@ -78,17 +89,22 @@
       <div class="flex items-center space-x-4">
         <h2 class="font-jersey text-3xl tracking-wide text-gruvbox-green">pixel pal</h2>
         <span id="status-badge" class="px-3 py-1 font-mono text-xs uppercase bg-gruvbox-green text-gruvbox-bg font-bold shadow-[2px_2px_0px_0px_#504945]">connected</span>
+        <span id="room-display-badge" class="px-2.5 py-1 font-mono text-xs uppercase bg-gruvbox-lighter text-gruvbox-yellow font-bold border border-gruvbox-border">lobby</span>
       </div>
-      <div class="flex items-center space-x-3">
-        <button id="toggle-chat-btn" class="px-4 py-2 bg-gruvbox-lighter hover:bg-gruvbox-border border-2 border-gruvbox-border text-gruvbox-fg font-jersey text-xl font-bold shadow-[3px_3px_0px_0px_#1d2021] transition active:translate-x-0.5 active:translate-y-0.5">
-          chatterbox 💬
-        </button>
+      <div class="flex items-center space-x-3 text-xs font-mono text-gruvbox-muted">
+        <span>press <strong class="text-gruvbox-yellow">/</strong> to chat</span>
       </div>
     </header>
 
     <!-- Interactive Desktop Canvas / Widget Area -->
     <div id="widget-canvas" class="relative flex-1 w-full h-full overflow-hidden bg-gruvbox-bg">
       <!-- Sprites will float here -->
+    </div>
+
+    <!-- Floating Game-Style Chat Input Bar (Initially Hidden) -->
+    <div id="game-chat-bar" class="hidden absolute bottom-12 left-1/2 transform -translate-x-1/2 z-40 w-96 bg-gruvbox-card border-2 border-gruvbox-border shadow-[6px_6px_0px_0px_#1d2021] p-3 flex items-center space-x-2">
+      <span class="font-jersey text-2xl text-gruvbox-green">/</span>
+      <input type="text" id="game-chat-input" placeholder="type message and press enter..." class="flex-1 bg-gruvbox-lighter border border-gruvbox-border px-3 py-1.5 text-xs font-mono text-gruvbox-fg focus:outline-none focus:border-gruvbox-green" autocomplete="off">
     </div>
 
     <!-- Sprite Editor Floating Modal / Drawer (Bottom Left) -->
@@ -119,23 +135,6 @@
 
       <!-- Color Swatches Palette -->
       <div id="color-palette" class="grid grid-cols-6 gap-1.5"></div>
-    </div>
-
-    <!-- Pop-out Chat Drawer (Bottom Right) -->
-    <div id="chat-drawer" class="hidden absolute bottom-6 right-6 bg-gruvbox-card rounded-none shadow-[6px_6px_0px_0px_#1d2021] border-2 border-gruvbox-border z-30 w-80 h-96 flex flex-col overflow-hidden">
-      <div class="bg-gruvbox-lighter border-b-2 border-gruvbox-border px-4 py-2.5 font-jersey text-2xl text-gruvbox-green flex items-center justify-between">
-        <span>chatterbox</span>
-        <button onclick="document.getElementById('chat-drawer').classList.add('hidden')" class="text-gruvbox-muted hover:text-gruvbox-fg text-xl">&times;</button>
-      </div>
-      <div id="chat-messages" class="flex-1 p-3 overflow-y-auto space-y-2.5 bg-gruvbox-bg font-mono text-xs">
-        <!-- Messages appear here -->
-      </div>
-      <div class="p-3 bg-gruvbox-card border-t-2 border-gruvbox-border flex space-x-2">
-        <input type="text" id="chat-input" placeholder="send message..." class="flex-1 px-3 py-2 bg-gruvbox-lighter border-2 border-gruvbox-border text-gruvbox-fg text-xs font-mono focus:outline-none focus:border-gruvbox-green">
-        <button id="send-chat-btn" class="bg-gruvbox-green hover:bg-gruvbox-greenHover text-gruvbox-bg font-jersey text-xl font-bold px-4 py-1.5 border-2 border-gruvbox-border shadow-[2px_2px_0px_0px_#1d2021]">
-          send
-        </button>
-      </div>
     </div>
 
   </div>

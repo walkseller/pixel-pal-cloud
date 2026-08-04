@@ -1,15 +1,16 @@
-// Cloud Socket.io App logic (Gruvbox Brutalist UI)
+// Cloud Socket.io App logic (Gruvbox Brutalist UI with / chat & speech bubbles)
 
 let socket = null;
 let username = localStorage.getItem('sprite_username') || 'parker';
 let currentTool = 'pencil';
 let currentColor = '#b8bb26';
 let isDrawing = false;
+let currentRoom = 'lobby';
 
 // 16x16 sprite data
 let spriteData = Array(256).fill('transparent');
 
-// Local users state map: id -> { username, sprite, x, y }
+// Local users state map: id -> { username, sprite, x, y, chatMessage }
 let users = {};
 let myId = '';
 
@@ -18,6 +19,11 @@ const connectScreen = document.getElementById('connect-screen');
 const appScreen = document.getElementById('app-screen');
 const usernameInput = document.getElementById('username-input');
 const joinBtn = document.getElementById('join-btn');
+const modeLobbyBtn = document.getElementById('mode-lobby-btn');
+const modePrivateBtn = document.getElementById('mode-private-btn');
+const roomCodeWrapper = document.getElementById('room-code-wrapper');
+const roomCodeInput = document.getElementById('room-code-input');
+const roomDisplayBadge = document.getElementById('room-display-badge');
 
 const pixelGridEl = document.getElementById('pixel-grid');
 const colorPicker = document.getElementById('color-picker');
@@ -28,13 +34,11 @@ const toolFill = document.getElementById('tool-fill');
 const toolClear = document.getElementById('tool-clear');
 const saveSpriteBtn = document.getElementById('save-sprite-btn');
 
-const chatMessagesEl = document.getElementById('chat-messages');
-const chatInput = document.getElementById('chat-input');
-const sendChatBtn = document.getElementById('send-chat-btn');
-const toggleChatBtn = document.getElementById('toggle-chat-btn');
-const chatDrawer = document.getElementById('chat-drawer');
 const widgetCanvas = document.getElementById('widget-canvas');
 const statusBadge = document.getElementById('status-badge');
+
+const gameChatBar = document.getElementById('game-chat-bar');
+const gameChatInput = document.getElementById('game-chat-input');
 
 const gruvboxPalette = [
   '#282828', '#ebdbb2', '#fb4934', '#fe8019', '#fabd2f', '#b8bb26',
@@ -47,8 +51,26 @@ function init() {
   buildPixelGrid();
   buildPalette();
 
+  modeLobbyBtn.addEventListener('click', () => {
+    currentRoom = 'lobby';
+    modeLobbyBtn.className = 'py-2 bg-gruvbox-green text-gruvbox-bg font-jersey text-xl font-bold border-2 border-gruvbox-border shadow-[2px_2px_0px_0px_#504945]';
+    modePrivateBtn.className = 'py-2 bg-gruvbox-lighter text-gruvbox-muted hover:text-gruvbox-fg font-jersey text-xl font-bold border-2 border-gruvbox-border';
+    roomCodeWrapper.classList.add('hidden');
+  });
+
+  modePrivateBtn.addEventListener('click', () => {
+    currentRoom = 'private';
+    modePrivateBtn.className = 'py-2 bg-gruvbox-green text-gruvbox-bg font-jersey text-xl font-bold border-2 border-gruvbox-border shadow-[2px_2px_0px_0px_#504945]';
+    modeLobbyBtn.className = 'py-2 bg-gruvbox-lighter text-gruvbox-muted hover:text-gruvbox-fg font-jersey text-xl font-bold border-2 border-gruvbox-border';
+    roomCodeWrapper.classList.remove('hidden');
+    roomCodeInput.focus();
+  });
+
   joinBtn.addEventListener('click', connectToServer);
   usernameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') connectToServer();
+  });
+  roomCodeInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') connectToServer();
   });
 
@@ -60,13 +82,20 @@ function init() {
 
   colorPicker.addEventListener('input', (e) => currentColor = e.target.value);
 
-  sendChatBtn.addEventListener('click', sendChatMessage);
-  chatInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendChatMessage();
+  // Global key listener for '/' to open game chat
+  window.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      openGameChat();
+    }
   });
 
-  toggleChatBtn.addEventListener('click', () => {
-    chatDrawer.classList.toggle('hidden');
+  gameChatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      sendGameChat();
+    } else if (e.key === 'Escape') {
+      closeGameChat();
+    }
   });
 
   const saved = localStorage.getItem('sprite_data');
@@ -78,9 +107,41 @@ function init() {
   }
 }
 
+function openGameChat() {
+  if (appScreen.classList.contains('hidden')) return;
+  gameChatBar.classList.remove('hidden');
+  gameChatInput.value = '';
+  gameChatInput.focus();
+}
+
+function closeGameChat() {
+  gameChatBar.classList.add('hidden');
+  gameChatInput.blur();
+}
+
+function sendGameChat() {
+  const text = gameChatInput.value.trim();
+  if (text && socket && socket.connected) {
+    socket.emit('send_message', text);
+  }
+  closeGameChat();
+}
+
 function connectToServer() {
   username = usernameInput.value.trim() || 'parker';
   localStorage.setItem('sprite_username', username);
+
+  let room = 'lobby';
+  if (currentRoom === 'private') {
+    const code = roomCodeInput.value.trim().toUpperCase();
+    if (!code) {
+      alert('Please enter a private room code!');
+      return;
+    }
+    room = 'room-' + code;
+  }
+
+  roomDisplayBadge.textContent = room === 'lobby' ? 'lobby' : room.replace('room-', '');
 
   // Connect via Socket.io to current host origin
   socket = io();
@@ -89,9 +150,9 @@ function connectToServer() {
     myId = socket.id;
     console.log('Connected to cloud server with id:', myId);
     
-    // Join room / send initial state
     socket.emit('join', {
       username,
+      room,
       sprite: spriteData,
       x: 120 + Math.floor(Math.random() * 100),
       y: 150 + Math.floor(Math.random() * 50)
@@ -107,15 +168,6 @@ function connectToServer() {
       users[u.id] = u;
     });
     renderCanvas();
-  });
-
-  socket.on('chat_history', (history) => {
-    chatMessagesEl.innerHTML = '';
-    history.forEach(msg => appendMessage(msg));
-  });
-
-  socket.on('new_message', (msg) => {
-    appendMessage(msg);
   });
 
   socket.on('disconnect', () => {
@@ -228,29 +280,6 @@ function saveAndBroadcast() {
   }
 }
 
-function sendChatMessage() {
-  const text = chatInput.value.trim();
-  if (!text) return;
-  if (socket && socket.connected) {
-    socket.emit('send_message', text);
-  }
-  chatInput.value = '';
-}
-
-function appendMessage(msg) {
-  const div = document.createElement('div');
-  div.className = 'p-2 bg-gruvbox-lighter border border-gruvbox-border shadow-[2px_2px_0px_0px_#1d2021]';
-  div.innerHTML = `
-    <div class="flex justify-between text-[11px] text-gruvbox-green font-bold mb-1">
-      <span>${msg.sender}</span>
-      <span class="text-gruvbox-muted font-normal">${msg.timestamp}</span>
-    </div>
-    <div class="text-gruvbox-fg text-xs break-words">${escapeHtml(msg.text)}</div>
-  `;
-  chatMessagesEl.appendChild(div);
-  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-}
-
 function renderCanvas() {
   widgetCanvas.innerHTML = '';
   Object.values(users).forEach(user => {
@@ -275,8 +304,24 @@ function renderCanvas() {
     nameTag.className = 'mt-1.5 px-2.5 py-0.5 bg-gruvbox-card border border-gruvbox-border text-gruvbox-green text-xs font-jersey tracking-wider font-bold shadow-[2px_2px_0px_0px_#1d2021] whitespace-nowrap';
     nameTag.textContent = user.username;
 
+    // Speech Bubble directly under name tag
+    if (user.chatMessage) {
+      const speechBubble = document.createElement('div');
+      speechBubble.className = 'mt-1.5 px-3 py-1 bg-gruvbox-card border-2 border-gruvbox-border text-gruvbox-yellow text-xs font-mono shadow-[3px_3px_0px_0px_#1d2021] max-w-xs break-words text-center';
+      speechBubble.textContent = user.chatMessage;
+      nameTag.appendChild(speechBubble); // or append to userDiv
+    }
+
     userDiv.appendChild(miniGrid);
     userDiv.appendChild(nameTag);
+
+    // If chat message exists, insert speech bubble between sprite & name or below name
+    if (user.chatMessage) {
+      const bubble = document.createElement('div');
+      bubble.className = 'mt-1 px-3 py-1 bg-gruvbox-card border border-gruvbox-border text-gruvbox-yellow text-[11px] font-mono shadow-[2px_2px_0px_0px_#1d2021] max-w-[160px] text-center break-words';
+      bubble.textContent = user.chatMessage;
+      userDiv.appendChild(bubble);
+    }
 
     // Make own sprite draggable
     if (user.id === myId) {
@@ -312,11 +357,6 @@ function renderCanvas() {
 
     widgetCanvas.appendChild(userDiv);
   });
-}
-
-function escapeHtml(text) {
-  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-  return text.replace(/[&<>"']/g, function(m) { return map[m]; });
 }
 
 window.addEventListener('DOMContentLoaded', init);
