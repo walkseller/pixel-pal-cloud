@@ -1,4 +1,4 @@
-// Cloud Socket.io App logic (Gruvbox Brutalist UI with / chat & speech bubbles)
+// Cloud Socket.io App logic (Gruvbox Brutalist UI with / chat & M reconnect)
 
 let socket = null;
 let username = localStorage.getItem('sprite_username') || 'parker';
@@ -82,11 +82,17 @@ function init() {
 
   colorPicker.addEventListener('input', (e) => currentColor = e.target.value);
 
-  // Global key listener for '/' to open game chat
+  // Global key listener for '/' and 'M'
   window.addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+    const activeTag = document.activeElement.tagName;
+    if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+
+    if (e.key === '/') {
       e.preventDefault();
       openGameChat();
+    } else if (e.key.toLowerCase() === 'm') {
+      e.preventDefault();
+      returnToConnectionScreen();
     }
   });
 
@@ -124,6 +130,16 @@ function sendGameChat() {
   if (text && socket && socket.connected) {
     socket.emit('send_message', text);
   }
+  closeGameChat();
+}
+
+function returnToConnectionScreen() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+  appScreen.classList.add('hidden');
+  connectScreen.classList.remove('hidden');
   closeGameChat();
 }
 
@@ -304,21 +320,13 @@ function renderCanvas() {
     nameTag.className = 'mt-1.5 px-2.5 py-0.5 bg-gruvbox-card border border-gruvbox-border text-gruvbox-green text-xs font-jersey tracking-wider font-bold shadow-[2px_2px_0px_0px_#1d2021] whitespace-nowrap';
     nameTag.textContent = user.username;
 
-    // Speech Bubble directly under name tag
-    if (user.chatMessage) {
-      const speechBubble = document.createElement('div');
-      speechBubble.className = 'mt-1.5 px-3 py-1 bg-gruvbox-card border-2 border-gruvbox-border text-gruvbox-yellow text-xs font-mono shadow-[3px_3px_0px_0px_#1d2021] max-w-xs break-words text-center';
-      speechBubble.textContent = user.chatMessage;
-      nameTag.appendChild(speechBubble); // or append to userDiv
-    }
-
     userDiv.appendChild(miniGrid);
     userDiv.appendChild(nameTag);
 
-    // If chat message exists, insert speech bubble between sprite & name or below name
+    // Speech bubble
     if (user.chatMessage) {
       const bubble = document.createElement('div');
-      bubble.className = 'mt-1 px-3 py-1 bg-gruvbox-card border border-gruvbox-border text-gruvbox-yellow text-[11px] font-mono shadow-[2px_2px_0px_0px_#1d2021] max-w-[160px] text-center break-words';
+      bubble.className = 'mt-1 px-3 py-1 bg-gruvbox-card border-2 border-gruvbox-border text-gruvbox-yellow text-[11px] font-mono shadow-[2px_2px_0px_0px_#1d2021] max-w-[160px] text-center break-words';
       bubble.textContent = user.chatMessage;
       userDiv.appendChild(bubble);
     }
