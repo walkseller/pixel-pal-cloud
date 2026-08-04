@@ -4,149 +4,107 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>pixel pal — brutalist cloud widget</title>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Font: Jersey 20 & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jersey+20&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <!-- Socket.io client -->
   <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="style.css">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            gruvbox: {
-              bg: '#1d2021',
-              card: '#282828',
-              lighter: '#32302f',
-              border: '#504945',
-              fg: '#ebdbb2',
-              muted: '#a89984',
-              green: '#8ec07c',
-              greenDark: '#b8bb26',
-              darkText: '#1d2021',
-              yellow: '#fabd2f',
-              red: '#fb4934'
-            }
-          },
-          fontFamily: {
-            jersey: ['"Jersey 20"', 'monospace'],
-            sans: ['Inter', 'sans-serif']
-          }
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="globals.css">
 </head>
-<body class="bg-gruvbox-bg min-h-screen text-gruvbox-fg font-sans overflow-hidden select-none">
+<body class="bg-[#1d2021] min-h-screen text-[#ebdbb2] font-sans overflow-hidden select-none">
 
-  <!-- Connect / Room Entry Screen (Pixel-Perfect Figma Match) -->
-  <div id="connect-screen" class="flex items-center justify-center min-h-screen p-4 bg-gruvbox-bg">
-    <!-- Stacked background cards for brutalist layered effect -->
-    <div class="relative max-w-[420px] w-full">
-      <!-- Background shadow card 2 -->
-      <div class="absolute inset-0 bg-[#151718] transform translate-x-3 translate-y-3 border-2 border-gruvbox-border"></div>
-      <!-- Background shadow card 1 -->
-      <div class="absolute inset-0 bg-[#222526] transform translate-x-1.5 translate-y-1.5 border-2 border-gruvbox-border"></div>
+  <!-- Connect / Room Entry Screen (Exact Anima Figma Export + Wired App Controls) -->
+  <div id="connect-screen" class="flex items-center justify-center min-h-screen p-4 bg-[#1d2021]">
+    
+    <div class="relative w-[639px] h-[558px] bg-[#32302f] border-[3px] border-[#252423] shadow-[0px_2px_15.5px_9px_rgba(0,0,0,0.4)] p-8 text-left">
       
-      <!-- Main Card -->
-      <div class="relative bg-gruvbox-card p-6 border-2 border-gruvbox-border text-left">
-        
-        <!-- Header -->
-        <div class="flex items-center justify-between pb-3 mb-3">
-          <div>
-            <h1 class="font-jersey text-3xl tracking-wide text-gruvbox-muted">pixel pal connection client</h1>
-          </div>
-          <div class="px-3 py-0.5 bg-gruvbox-green text-gruvbox-darkText font-jersey text-xl font-bold border border-gruvbox-border">cloud</div>
-        </div>
-
-        <!-- Divider line -->
-        <div class="w-full h-[2px] bg-gruvbox-border mb-3"></div>
-
-        <!-- Subtext description -->
-        <div class="text-[11px] font-mono text-gruvbox-muted mb-3 space-y-0.5 leading-tight">
-          <p>no server or vpn needed!</p>
-          <p>connect directly across your router via P2P.</p>
-        </div>
-
-        <!-- Divider line -->
-        <div class="w-full h-[2px] bg-gruvbox-border mb-3"></div>
-
-        <div class="text-[11px] font-mono text-gruvbox-muted mb-4">
-          <p>press / inside lobby to chat, and M to return here!</p>
-        </div>
-        
-        <div class="space-y-4">
-          <!-- Name Input with Attached Label Box -->
-          <div>
-            <div class="flex border-2 border-gruvbox-green">
-              <span class="bg-gruvbox-green text-gruvbox-darkText font-jersey text-2xl px-4 py-1 font-bold border-r-2 border-gruvbox-green flex items-center">name</span>
-              <input type="text" id="username-input" class="w-full px-3 py-1.5 bg-gruvbox-lighter text-gruvbox-fg font-mono text-sm focus:outline-none" placeholder="parker">
-            </div>
-          </div>
-
-          <!-- Divider line -->
-          <div class="w-full h-[2px] bg-gruvbox-border my-2"></div>
-
-          <!-- Room Mode Selector -->
-          <div>
-            <label class="block text-[11px] font-mono uppercase tracking-widest text-gruvbox-muted mb-2">select which lobby you'd like to join!</label>
-            <div class="grid grid-cols-2 gap-2 mb-3">
-              <button id="mode-lobby-btn" class="py-2.5 bg-gruvbox-green text-gruvbox-darkText font-jersey text-2xl font-bold border-2 border-gruvbox-green transition">public lobby</button>
-              <button id="mode-private-btn" class="py-2.5 bg-gruvbox-lighter text-gruvbox-muted hover:text-gruvbox-fg font-jersey text-2xl font-bold border-2 border-gruvbox-border transition">private lobby</button>
-            </div>
-            <div id="room-code-wrapper" class="hidden">
-              <input type="text" id="room-code-input" class="w-full px-4 py-2 bg-gruvbox-lighter border-2 border-gruvbox-green text-gruvbox-fg uppercase font-mono text-sm focus:outline-none" placeholder="ENTER SECRET ROOM CODE">
-            </div>
-          </div>
-
-          <!-- Connect Button -->
-          <div class="pt-1">
-            <button id="join-btn" class="w-full py-3 bg-gruvbox-green hover:opacity-90 text-gruvbox-darkText font-jersey text-3xl tracking-wide font-bold border-2 border-gruvbox-green transition active:translate-x-0.5 active:translate-y-0.5">
-              connect and enter lobby
-            </button>
-          </div>
-        </div>
-
+      <!-- Top Header / Title & Cloud Badge -->
+      <div class="absolute top-[20px] left-[21px] w-[511px] h-[68px] bg-[#252423] flex items-center justify-between px-5">
+        <h1 class="font-jersey text-3xl tracking-wide text-[#a89984]">pixel pal connection client</h1>
+        <div class="px-4 py-1 bg-[#8ec07c] text-[#1d2021] font-jersey text-xl font-bold border border-[#504945]">cloud</div>
       </div>
+
+      <!-- Subtext description lines -->
+      <div class="absolute top-[108px] left-[25px] text-[11px] font-mono text-[#a89984] space-y-0.5">
+        <p>no server or vpn needed!</p>
+        <p>connect directly across your router via P2P.</p>
+      </div>
+
+      <!-- Divider lines -->
+      <div class="absolute top-[152px] left-[25px] w-[590px] h-[2px] bg-[#504945]"></div>
+      <div class="absolute top-[172px] left-[25px] text-[11px] font-mono text-[#a89984]">
+        <p>press / inside lobby to chat, and M to return here!</p>
+      </div>
+      <div class="absolute top-[200px] left-[25px] w-[590px] h-[2px] bg-[#504945]"></div>
+
+      <!-- Name Input with Attached Label Box -->
+      <div class="absolute top-[238px] left-[21px] w-[598px] h-[63px] bg-[#252423] border-2 border-[#8ec07c] shadow-[0px_4px_7.2px_2px_rgba(0,0,0,0.4)] flex items-center">
+        <div class="bg-[#8ec07c] text-[#1d2021] font-jersey text-2xl px-5 py-2 font-bold h-full flex items-center border-r-2 border-[#8ec07c]">name</div>
+        <input type="text" id="username-input" class="w-full px-4 py-2 bg-transparent text-[#ebdbb2] font-mono text-base focus:outline-none" placeholder="parker">
+      </div>
+
+      <!-- Divider line -->
+      <div class="absolute top-[330px] left-[25px] w-[590px] h-[2px] bg-[#504945]"></div>
+
+      <!-- Room Mode Selector Label -->
+      <div class="absolute top-[345px] left-[25px] text-[11px] font-mono uppercase tracking-widest text-[#a89984]">
+        select which lobby you'd like to join!
+      </div>
+
+      <!-- Public / Private Lobby Toggle Buttons -->
+      <div class="absolute top-[372px] left-[21px] w-[598px] grid grid-cols-2 gap-2">
+        <button id="mode-lobby-btn" class="py-3 bg-[#8ec07c] text-[#1d2021] font-jersey text-2xl font-bold border-2 border-[#8ec07c] shadow-[0px_4px_7.2px_2px_rgba(0,0,0,0.4)] transition">public lobby</button>
+        <button id="mode-private-btn" class="py-3 bg-[#252423] text-[#a89984] hover:text-[#ebdbb2] font-jersey text-2xl font-bold border-2 border-[#504945] transition">private lobby</button>
+      </div>
+
+      <!-- Private Room Code Input (Hidden by default) -->
+      <div id="room-code-wrapper" class="hidden absolute top-[445px] left-[21px] w-[598px]">
+        <input type="text" id="room-code-input" class="w-full px-4 py-2 bg-[#252423] border-2 border-[#8ec07c] text-[#ebdbb2] uppercase font-mono text-sm focus:outline-none" placeholder="ENTER SECRET ROOM CODE">
+      </div>
+
+      <!-- Connect Button -->
+      <div class="absolute top-[460px] left-[21px] w-[598px]">
+        <button id="join-btn" class="w-full py-3.5 bg-[#8ec07c] hover:opacity-90 text-[#1d2021] font-jersey text-3xl tracking-wide font-bold border-2 border-[#8ec07c] shadow-[0px_4px_7.2px_2px_rgba(0,0,0,0.4)] transition active:translate-x-0.5 active:translate-y-0.5">
+          connect and enter lobby
+        </button>
+      </div>
+
     </div>
   </div>
 
   <!-- Main App / Widget Screen -->
-  <div id="app-screen" class="hidden relative w-screen h-screen overflow-hidden flex flex-col bg-gruvbox-bg">
+  <div id="app-screen" class="hidden relative w-screen h-screen overflow-hidden flex flex-col bg-[#1d2021]">
     
     <!-- Top Header Bar -->
-    <header class="bg-gruvbox-card border-b-2 border-gruvbox-border px-6 py-3 flex items-center justify-between z-20">
+    <header class="bg-[#282828] border-b-2 border-[#504945] px-6 py-3 flex items-center justify-between z-20">
       <div class="flex items-center space-x-4">
-        <h2 class="font-jersey text-3xl tracking-wide text-gruvbox-green">pixel pal</h2>
-        <span id="status-badge" class="px-3 py-1 font-mono text-xs uppercase bg-gruvbox-green text-gruvbox-darkText font-bold">connected</span>
-        <span id="room-display-badge" class="px-2.5 py-1 font-mono text-xs uppercase bg-gruvbox-lighter text-gruvbox-yellow font-bold border border-gruvbox-border">lobby</span>
+        <h2 class="font-jersey text-3xl tracking-wide text-[#8ec07c]">pixel pal</h2>
+        <span id="status-badge" class="px-3 py-1 font-mono text-xs uppercase bg-[#8ec07c] text-[#1d2021] font-bold">connected</span>
+        <span id="room-display-badge" class="px-2.5 py-1 font-mono text-xs uppercase bg-[#32302f] text-[#fabd2f] font-bold border border-[#504945]">lobby</span>
       </div>
-      <div class="flex items-center space-x-4 text-xs font-mono text-gruvbox-muted">
-        <span>press <strong class="text-gruvbox-yellow">/</strong> to chat</span>
-        <span>press <strong class="text-gruvbox-yellow">M</strong> for menu</span>
+      <div class="flex items-center space-x-4 text-xs font-mono text-[#a89984]">
+        <span>press <strong class="text-[#fabd2f]">/</strong> to chat</span>
+        <span>press <strong class="text-[#fabd2f]">M</strong> for menu</span>
       </div>
     </header>
 
     <!-- Interactive Desktop Canvas / Widget Area -->
-    <div id="widget-canvas" class="relative flex-1 w-full h-full overflow-hidden bg-gruvbox-bg">
+    <div id="widget-canvas" class="relative flex-1 w-full h-full overflow-hidden bg-[#1d2021]">
       <!-- Sprites will float here -->
     </div>
 
     <!-- Floating Game-Style Chat Input Bar (Initially Hidden) -->
-    <div id="game-chat-bar" class="hidden absolute bottom-12 left-1/2 transform -translate-x-1/2 z-40 w-96 bg-gruvbox-card border-2 border-gruvbox-border p-3 flex items-center space-x-2">
-      <span class="font-jersey text-2xl text-gruvbox-green">/</span>
-      <input type="text" id="game-chat-input" placeholder="type message and press enter..." class="flex-1 bg-gruvbox-lighter border border-gruvbox-border px-3 py-1.5 text-xs font-mono text-gruvbox-fg focus:outline-none focus:border-gruvbox-green" autocomplete="off">
+    <div id="game-chat-bar" class="hidden absolute bottom-12 left-1/2 transform -translate-x-1/2 z-40 w-96 bg-[#282828] border-2 border-[#504945] p-3 flex items-center space-x-2">
+      <span class="font-jersey text-2xl text-[#8ec07c]">/</span>
+      <input type="text" id="game-chat-input" placeholder="type message and press enter..." class="flex-1 bg-[#32302f] border border-[#504945] px-3 py-1.5 text-xs font-mono text-[#ebdbb2] focus:outline-none focus:border-[#8ec07c]" autocomplete="off">
     </div>
 
     <!-- Sprite Editor Floating Modal / Drawer (Bottom Left) -->
-    <div class="absolute bottom-6 left-6 bg-gruvbox-card p-5 border-2 border-gruvbox-border z-20 w-84">
-      <div class="flex items-center justify-between mb-3.5 pb-2 border-b-2 border-gruvbox-border">
-        <h3 class="font-jersey text-2xl text-gruvbox-fg">sprite editor</h3>
-        <button id="save-sprite-btn" class="text-xs font-jersey text-lg px-3 py-1 bg-gruvbox-green hover:opacity-90 text-gruvbox-darkText font-bold border border-gruvbox-border transition">
+    <div class="absolute bottom-6 left-6 bg-[#282828] p-5 border-2 border-[#504945] z-20 w-84">
+      <div class="flex items-center justify-between mb-3.5 pb-2 border-b-2 border-[#504945]">
+        <h3 class="font-jersey text-2xl text-[#ebdbb2]">sprite editor</h3>
+        <button id="save-sprite-btn" class="text-xs font-jersey text-lg px-3 py-1 bg-[#8ec07c] hover:opacity-90 text-[#1d2021] font-bold border border-[#504945] transition">
           sync sprite
         </button>
       </div>
@@ -155,16 +113,16 @@
       <div id="pixel-grid" class="pixel-grid mb-3.5"></div>
 
       <!-- Color Tools & Palette -->
-      <div class="flex items-center justify-between mb-3.5 bg-gruvbox-lighter p-2 border-2 border-gruvbox-border">
+      <div class="flex items-center justify-between mb-3.5 bg-[#32302f] p-2 border-2 border-[#504945]">
         <div class="flex items-center space-x-2">
-          <input type="color" id="color-picker" value="#b8bb26" class="w-7 h-7 rounded-none border border-gruvbox-border cursor-pointer bg-gruvbox-bg">
-          <span class="text-xs font-mono uppercase text-gruvbox-muted">pick color</span>
+          <input type="color" id="color-picker" value="#b8bb26" class="w-7 h-7 rounded-none border border-[#504945] cursor-pointer bg-[#1d2021]">
+          <span class="text-xs font-mono uppercase text-[#a89984]">pick color</span>
         </div>
         <div class="flex space-x-1">
-          <button id="tool-pencil" class="px-2.5 py-1 bg-gruvbox-green text-gruvbox-darkText font-jersey text-lg font-bold border border-gruvbox-border">pencil</button>
-          <button id="tool-eraser" class="px-2 py-1 bg-gruvbox-lighter text-gruvbox-muted hover:text-gruvbox-fg font-jersey text-lg font-bold border border-gruvbox-border">eraser</button>
-          <button id="tool-fill" class="px-2 py-1 bg-gruvbox-lighter text-gruvbox-muted hover:text-gruvbox-fg font-jersey text-lg font-bold border border-gruvbox-border">fill</button>
-          <button id="tool-clear" class="px-2 py-1 bg-gruvbox-lighter text-gruvbox-red hover:bg-gruvbox-border font-jersey text-lg font-bold border border-gruvbox-border">clear</button>
+          <button id="tool-pencil" class="px-2.5 py-1 bg-[#8ec07c] text-[#1d2021] font-jersey text-lg font-bold border border-[#504945]">pencil</button>
+          <button id="tool-eraser" class="px-2.5 py-1 bg-[#32302f] text-[#a89984] hover:text-[#ebdbb2] font-jersey text-lg font-bold border border-[#504945]">eraser</button>
+          <button id="tool-fill" class="px-2.5 py-1 bg-[#32302f] text-[#a89984] hover:text-[#ebdbb2] font-jersey text-lg font-bold border border-[#504945]">fill</button>
+          <button id="tool-clear" class="px-2.5 py-1 bg-[#32302f] text-[#fb4934] hover:bg-[#504945] font-jersey text-lg font-bold border border-[#504945]">clear</button>
         </div>
       </div>
 
