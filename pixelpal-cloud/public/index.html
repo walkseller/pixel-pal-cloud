@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pixel pal — brutalist cloud widget</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Font: Jersey 20 & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jersey+20&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Socket.io client -->
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gruvbox: {
+              bg: '#1d2021',
+              card: '#282828',
+              lighter: '#3c3836',
+              border: '#504945',
+              fg: '#ebdbb2',
+              muted: '#a89984',
+              green: '#b8bb26',
+              greenHover: '#98971a',
+              yellow: '#fabd2f',
+              orange: '#fe8019',
+              red: '#fb4934',
+              aqua: '#8ec07c'
+            }
+          },
+          fontFamily: {
+            jersey: ['"Jersey 20"', 'monospace'],
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gruvbox-bg min-h-screen text-gruvbox-fg font-sans overflow-hidden select-none">
+
+  <!-- Connect / Name Entry Screen -->
+  <div id="connect-screen" class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-gruvbox-card p-8 rounded-none shadow-[6px_6px_0px_0px_#504945] max-w-md w-full border-2 border-gruvbox-border text-left">
+      <div class="flex items-center justify-between mb-6 pb-4 border-b-2 border-gruvbox-border">
+        <div>
+          <h1 class="text-4xl font-jersey tracking-wider text-gruvbox-green">pixel pal cloud</h1>
+          <p class="text-xs text-gruvbox-muted font-mono mt-1">no vpn or setup! just enter your name and hop in.</p>
+        </div>
+        <div class="px-2.5 py-1 bg-gruvbox-green text-gruvbox-bg font-jersey text-xl font-bold shadow-[2px_2px_0px_0px_#504945]">cloud</div>
+      </div>
+      
+      <div class="space-y-5">
+        <div>
+          <label class="block text-xs font-mono uppercase tracking-widest text-gruvbox-muted mb-1.5">your name</label>
+          <input type="text" id="username-input" class="w-full px-4 py-2.5 bg-gruvbox-lighter border-2 border-gruvbox-border text-gruvbox-fg font-mono text-sm focus:outline-none focus:border-gruvbox-green shadow-[2px_2px_0px_0px_#504945]" placeholder="parker">
+        </div>
+
+        <div>
+          <button id="join-btn" class="w-full py-3 bg-gruvbox-green hover:bg-gruvbox-greenHover text-gruvbox-bg font-jersey text-2xl tracking-wide font-bold shadow-[4px_4px_0px_0px_#504945] transition active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#504945]">
+            enter widget room 🐾
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App / Widget Screen -->
+  <div id="app-screen" class="hidden relative w-screen h-screen overflow-hidden flex flex-col bg-gruvbox-bg">
+    
+    <!-- Top Header Bar -->
+    <header class="bg-gruvbox-card border-b-2 border-gruvbox-border px-6 py-3 flex items-center justify-between z-20 shadow-[0px_4px_0px_0px_#1d2021]">
+      <div class="flex items-center space-x-4">
+        <h2 class="font-jersey text-3xl tracking-wide text-gruvbox-green">pixel pal</h2>
+        <span id="status-badge" class="px-3 py-1 font-mono text-xs uppercase bg-gruvbox-green text-gruvbox-bg font-bold shadow-[2px_2px_0px_0px_#504945]">connected</span>
+      </div>
+      <div class="flex items-center space-x-3">
+        <button id="toggle-chat-btn" class="px-4 py-2 bg-gruvbox-lighter hover:bg-gruvbox-border border-2 border-gruvbox-border text-gruvbox-fg font-jersey text-xl font-bold shadow-[3px_3px_0px_0px_#1d2021] transition active:translate-x-0.5 active:translate-y-0.5">
+          chatterbox 💬
+        </button>
+      </div>
+    </header>
+
+    <!-- Interactive Desktop Canvas / Widget Area -->
+    <div id="widget-canvas" class="relative flex-1 w-full h-full overflow-hidden bg-gruvbox-bg">
+      <!-- Sprites will float here -->
+    </div>
+
+    <!-- Sprite Editor Floating Modal / Drawer (Bottom Left) -->
+    <div class="absolute bottom-6 left-6 bg-gruvbox-card p-5 rounded-none shadow-[6px_6px_0px_0px_#1d2021] border-2 border-gruvbox-border z-20 w-84">
+      <div class="flex items-center justify-between mb-3.5 pb-2 border-b-2 border-gruvbox-border">
+        <h3 class="font-jersey text-2xl text-gruvbox-fg">sprite editor</h3>
+        <button id="save-sprite-btn" class="text-xs font-jersey text-lg px-3 py-1 bg-gruvbox-green hover:bg-gruvbox-greenHover text-gruvbox-bg font-bold border-2 border-gruvbox-border shadow-[2px_2px_0px_0px_#1d2021] transition active:translate-x-0.5 active:translate-y-0.5">
+          sync sprite
+        </button>
+      </div>
+
+      <!-- 16x16 Pixel Grid -->
+      <div id="pixel-grid" class="pixel-grid mb-3.5"></div>
+
+      <!-- Color Tools & Palette -->
+      <div class="flex items-center justify-between mb-3.5 bg-gruvbox-lighter p-2 border-2 border-gruvbox-border">
+        <div class="flex items-center space-x-2">
+          <input type="color" id="color-picker" value="#b8bb26" class="w-7 h-7 rounded-none border-2 border-gruvbox-border cursor-pointer bg-gruvbox-bg">
+          <span class="text-xs font-mono uppercase text-gruvbox-muted">pick color</span>
+        </div>
+        <div class="flex space-x-1">
+          <button id="tool-pencil" class="px-2.5 py-1 bg-gruvbox-green text-gruvbox-bg font-jersey text-lg font-bold border border-gruvbox-border shadow-[1px_1px_0px_0px_#1d2021]">pencil</button>
+          <button id="tool-eraser" class="px-2 py-1 bg-gruvbox-lighter text-gruvbox-muted hover:text-gruvbox-fg font-jersey text-lg font-bold border border-gruvbox-border">eraser</button>
+          <button id="tool-fill" class="px-2 py-1 bg-gruvbox-lighter text-gruvbox-muted hover:text-gruvbox-fg font-jersey text-lg font-bold border border-gruvbox-border">fill</button>
+          <button id="tool-clear" class="px-2 py-1 bg-gruvbox-lighter text-gruvbox-red hover:bg-gruvbox-border font-jersey text-lg font-bold border border-gruvbox-border">clear</button>
+        </div>
+      </div>
+
+      <!-- Color Swatches Palette -->
+      <div id="color-palette" class="grid grid-cols-6 gap-1.5"></div>
+    </div>
+
+    <!-- Pop-out Chat Drawer (Bottom Right) -->
+    <div id="chat-drawer" class="hidden absolute bottom-6 right-6 bg-gruvbox-card rounded-none shadow-[6px_6px_0px_0px_#1d2021] border-2 border-gruvbox-border z-30 w-80 h-96 flex flex-col overflow-hidden">
+      <div class="bg-gruvbox-lighter border-b-2 border-gruvbox-border px-4 py-2.5 font-jersey text-2xl text-gruvbox-green flex items-center justify-between">
+        <span>chatterbox</span>
+        <button onclick="document.getElementById('chat-drawer').classList.add('hidden')" class="text-gruvbox-muted hover:text-gruvbox-fg text-xl">&times;</button>
+      </div>
+      <div id="chat-messages" class="flex-1 p-3 overflow-y-auto space-y-2.5 bg-gruvbox-bg font-mono text-xs">
+        <!-- Messages appear here -->
+      </div>
+      <div class="p-3 bg-gruvbox-card border-t-2 border-gruvbox-border flex space-x-2">
+        <input type="text" id="chat-input" placeholder="send message..." class="flex-1 px-3 py-2 bg-gruvbox-lighter border-2 border-gruvbox-border text-gruvbox-fg text-xs font-mono focus:outline-none focus:border-gruvbox-green">
+        <button id="send-chat-btn" class="bg-gruvbox-green hover:bg-gruvbox-greenHover text-gruvbox-bg font-jersey text-xl font-bold px-4 py-1.5 border-2 border-gruvbox-border shadow-[2px_2px_0px_0px_#1d2021]">
+          send
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
