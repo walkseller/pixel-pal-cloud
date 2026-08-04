@@ -16,10 +16,12 @@ const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
-  }
+  },
+  pingInterval: 10000,
+  pingTimeout: 5000
 });
 
-let rooms = {}; // roomId -> { users: { socketId: userData }, messages: [] }
+let rooms = {}; // roomId -> { users: { socketId: userData } }
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -27,7 +29,6 @@ io.on('connection', (socket) => {
   socket.on('join', (data) => {
     const { username, room = 'lobby', sprite, x, y } = data;
     
-    // Leave previous rooms
     Array.from(socket.rooms).forEach(r => {
       if (r !== socket.id) socket.leave(r);
     });
@@ -36,7 +37,7 @@ io.on('connection', (socket) => {
     socket.currentRoom = room;
 
     if (!rooms[room]) {
-      rooms[room] = { users: {}, messages: [] };
+      rooms[room] = { users: {} };
     }
 
     rooms[room].users[socket.id] = {
@@ -75,12 +76,10 @@ io.on('connection', (socket) => {
       const user = rooms[room].users[socket.id];
       user.chatMessage = text;
       
-      // Clear existing timer if any
       if (user.chatTimer) clearTimeout(user.chatTimer);
 
       io.to(room).emit('update_users', Object.values(rooms[room].users));
 
-      // Auto clear chat bubble after 6 seconds
       user.chatTimer = setTimeout(() => {
         if (rooms[room] && rooms[room].users[socket.id]) {
           rooms[room].users[socket.id].chatMessage = '';
@@ -107,5 +106,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`PixelPal cloud server running on port ${PORT}`);
+  console.log(`PixelPal Railway server running on port ${PORT}`);
 });
